@@ -862,7 +862,6 @@
       font-weight: 700;
       color: var(--text-primary);
       margin-bottom: 4px;
-      
     }
 
     .auth-sub {
@@ -1212,7 +1211,7 @@
           <div class="card">
             <div class="card-header">
               <h2 class="card-title">All Tracked Topics</h2>
-              <span class="card-badge" id="topic-count-badge">4 Registered</span>
+              <span class="card-badge" id="topic-count-badge">0 Registered</span>
             </div>
 
             <div class="table-container">
@@ -1338,7 +1337,7 @@
           <div>
             <h2 class="card-title">Placement Questions (Syncs Directly to Topics)</h2>
             <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
-              Attempt questions in-app. Clicking "+ Record Correct" or "+ Record Miss" immediately updates your topic metrics and recency date.
+              Attempt questions in-app. Select an option and click "Submit & Sync to Planner" to auto-evaluate and update your metrics.
             </p>
           </div>
         </div>
@@ -1448,12 +1447,6 @@
 
           <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">Sign in</button>
         </form>
-
-        <div class="auth-divider"><span>OR QUICK ACCESS</span></div>
-
-        <button type="button" class="btn btn-secondary" onclick="quickJudgeLogin()" style="width: 100%;">
-          ⚡ Quick Judge Demo Login
-        </button>
 
         <div style="margin-top: 20px; text-align: center; font-size: 0.82rem; color: var(--text-muted);">
           Don't have an account? <a onclick="switchModalAuthMode('signup')" style="color: var(--primary); font-weight: 600; cursor: pointer;">Sign up</a>
@@ -1585,43 +1578,9 @@
   </footer>
 
   <script>
-    // 1. Initial State & Seed Data (Strict hackathon edge case compliance)
-    let topics = [
-      {
-        id: "1",
-        name: "Dynamic Programming",
-        category: "Coding",
-        tried: 25,
-        correct: 10,
-        lastPractised: "2026-09-15" // 40% accuracy, ~28 days ago -> High Priority
-      },
-      {
-        id: "2",
-        name: "Low-Level System Design (LLD)",
-        category: "Interview Questions",
-        tried: 0,
-        correct: 0,
-        lastPractised: "" // 0 attempted -> "Not practised yet" -> High Priority
-      },
-      {
-        id: "3",
-        name: "Probability & Permutations",
-        category: "Maths / Aptitude",
-        tried: 30,
-        correct: 21,
-        lastPractised: "2026-10-06" // 70% accuracy, 7 days ago -> Medium Priority
-      },
-      {
-        id: "4",
-        name: "Syllogisms & Logical Deductions",
-        category: "Logical Reasoning",
-        tried: 20,
-        correct: 18,
-        lastPractised: "2026-10-11" // 90% accuracy, 2 days ago -> Low Priority
-      }
-    ];
+    // 1. Initial State: Zeroed out for fresh start
+    let topics = [];
 
-    // Auth State: Defaults to false to trigger modal for unauthenticated visitors
     let currentUser = {
       name: "",
       email: "",
@@ -1715,7 +1674,6 @@
     let questionAnswers = {};
     let questionRevealed = {};
 
-    // Rule: Accuracy = correct answers / questions tried * 100.
     function calculateAccuracy(tried, correct) {
       if (!tried || tried <= 0) return null;
       return Math.round((correct / tried) * 100);
@@ -1723,7 +1681,7 @@
 
     function getDaysSince(dateString) {
       if (!dateString) return Infinity;
-      const anchorDate = new Date("2026-10-13"); // Aligned with the current runtime anchor
+      const anchorDate = new Date("2026-10-13");
       const past = new Date(dateString);
       const diff = Math.floor((anchorDate - past) / (1000 * 60 * 60 * 24));
       return diff < 0 ? 0 : diff;
@@ -1733,7 +1691,6 @@
       const accuracy = calculateAccuracy(topic.tried, topic.correct);
       const days = getDaysSince(topic.lastPractised);
 
-      // Rule: Untested topic (tried = 0)
       if (accuracy === null) {
         return {
           level: "High",
@@ -1742,7 +1699,6 @@
         };
       }
 
-      // Rule: Low accuracy (< 50%)
       if (accuracy < 50) {
         const decayText = days === Infinity ? "never reviewed" : `unrevised for ${days} days`;
         return {
@@ -1752,7 +1708,6 @@
         };
       }
 
-      // Rule: Moderate accuracy (50-74%) OR high accuracy neglected for over 14 days
       if (accuracy < 75 || days >= 14) {
         const reason = accuracy < 75
           ? `Moderate accuracy (${accuracy}%). Candidate requires more question volume to guarantee test consistency.`
@@ -1764,7 +1719,6 @@
         };
       }
 
-      // Rule: High accuracy (>= 75%) and recently practised (< 14 days)
       return {
         level: "Low",
         weight: 100 + (100 - accuracy),
@@ -1802,7 +1756,6 @@
         return { ...t, accuracy, priority: prio.level, weight: prio.weight, reason: prio.reason };
       });
 
-      // Update KPI Stat Cards
       const globalAcc = totalTried > 0 ? Math.round((totalCorrect / totalTried) * 100) : 0;
       document.getElementById("stat-accuracy").textContent = `${globalAcc}%`;
       document.getElementById("stat-accuracy-sub").textContent = `${totalCorrect} / ${totalTried} correct`;
@@ -1811,7 +1764,6 @@
       document.getElementById("stat-total-topics").textContent = topics.length;
       document.getElementById("stat-unattempted-count").textContent = `${unattemptedCount} untried`;
 
-      // 1. Render Table Rows
       enriched.forEach(item => {
         const accuracyDisplay = item.accuracy !== null 
           ? `<strong>${item.accuracy}%</strong>` 
@@ -1837,7 +1789,6 @@
         tableBody.appendChild(tr);
       });
 
-      // 2. Render Ranked Priority Queue
       const sortedQueue = [...enriched].sort((a, b) => b.weight - a.weight);
 
       sortedQueue.forEach((item, index) => {
@@ -1866,7 +1817,6 @@
       const correct = parseInt(document.getElementById("topic-correct").value, 10) || 0;
       const date = document.getElementById("topic-date").value;
 
-      // Validation rule: Correct answers cannot exceed questions tried
       if (correct > tried) {
         triggerToast("Validation Error", "Correct answers cannot exceed total questions tried.");
         return;
@@ -1943,6 +1893,7 @@
       triggerToast("Topic Deleted", `Removed "${item ? item.name : 'topic'}" from planner.`);
     };
 
+    // UPDATED RENDER QUESTIONS WITH AUTO-EVALUATION & SUBMIT SYNC
     function renderQuestions() {
       const container = document.getElementById("questions-list-container");
       container.innerHTML = "";
@@ -1961,8 +1912,16 @@
         let optionsHtml = '<div class="option-grid">';
         q.options.forEach((opt, idx) => {
           const isSelected = userChoice === idx;
+          let extraClass = '';
+          if (isRevealed) {
+            if (idx === q.ans) extraClass = 'background: #dcfce7; border-color: #166534; color: #166534; font-weight: 700;';
+            else if (isSelected) extraClass = 'background: #fef2f2; border-color: #dc2626; color: #dc2626;';
+          } else if (isSelected) {
+            extraClass = 'border-color: var(--primary); background: #eff6ff; color: #1e40af; font-weight: 600;';
+          }
+
           optionsHtml += `
-            <button class="option-btn ${isSelected ? 'selected' : ''}" onclick="selectAnswer(${q.id}, ${idx})">
+            <button class="option-btn" style="${extraClass}" onclick="selectAnswer(${q.id}, ${idx})">
               <strong style="margin-right: 6px;">${String.fromCharCode(65 + idx)}.</strong> ${escapeHtml(opt)}
             </button>
           `;
@@ -1971,10 +1930,16 @@
 
         let explanationHtml = '';
         if (isRevealed) {
+          const isUserCorrect = userChoice === q.ans;
+          const resultBadge = isUserCorrect 
+            ? `<span class="badge" style="background: #dcfce7; color: #166534; margin-bottom: 8px;">✓ Your Answer was Correct! (Synced to Planner)</span>` 
+            : `<span class="badge" style="background: #fef2f2; color: #991b1b; margin-bottom: 8px;">✗ Incorrect Answer (Logged as Miss)</span>`;
+
           explanationHtml = `
-            <div class="explanation-box">
-              <strong style="color: var(--text-primary);">Correct Answer: Option ${String.fromCharCode(65 + q.ans)}</strong>
-              <div style="margin-top: 3px;">${escapeHtml(q.explanation)}</div>
+            <div class="explanation-box" style="margin-top: 12px;">
+              ${resultBadge}
+              <div><strong style="color: var(--text-primary);">Correct Answer: Option ${String.fromCharCode(65 + q.ans)}</strong></div>
+              <div style="margin-top: 4px;">${escapeHtml(q.explanation)}</div>
             </div>
           `;
         }
@@ -1988,16 +1953,11 @@
           ${optionsHtml}
           <div class="question-footer">
             <button class="btn btn-subtle" onclick="toggleExplanation(${q.id})" style="padding: 0;">
-              ${isRevealed ? 'Hide Explanation' : 'View Explanation'}
+              ${isRevealed ? 'Hide Details' : 'View Explanation'}
             </button>
-            <div style="display: flex; gap: 6px;">
-              <button class="btn btn-secondary" onclick="recordToTopic('${escapeHtml(q.topic)}', '${q.category}', true)" style="font-size: 0.78rem; color: #166534;">
-                + Record Correct (+1)
-              </button>
-              <button class="btn btn-secondary" onclick="recordToTopic('${escapeHtml(q.topic)}', '${q.category}', false)" style="font-size: 0.78rem; color: #991b1b;">
-                + Record Miss (+1 Tried)
-              </button>
-            </div>
+            <button class="btn btn-primary" onclick="submitAndRecordQuestion(${q.id}, '${escapeHtml(q.topic)}', '${q.category}')" style="font-size: 0.82rem; padding: 6px 14px;">
+              Submit & Sync to Planner 🚀
+            </button>
           </div>
           ${explanationHtml}
         `;
@@ -2013,6 +1973,22 @@
     window.toggleExplanation = function(qId) {
       questionRevealed[qId] = !questionRevealed[qId];
       renderQuestions();
+    };
+
+    window.submitAndRecordQuestion = function(qId, topicName, category) {
+      const userChoice = questionAnswers[qId];
+      if (userChoice === undefined) {
+        triggerToast("Select Option", "Please select an option (A, B, C, or D) first!");
+        return;
+      }
+
+      const q = questionBank.find(item => item.id === qId);
+      if (!q) return;
+
+      const isCorrect = (userChoice === q.ans);
+      questionRevealed[qId] = true;
+      renderQuestions();
+      recordToTopic(topicName, category, isCorrect);
     };
 
     window.filterQuestions = function(category, tabBtn) {
@@ -2064,7 +2040,6 @@
       triggerToast("External Platform", `Launching ${platform} problem search for "${topTopic}".`);
     };
 
-    // Fetch Live Questions from OpenTDB Public API
     window.fetchLiveApiQuestions = function() {
       const statusEl = document.getElementById("live-api-status");
       const btn = document.getElementById("btn-fetch-live");
@@ -2080,7 +2055,6 @@
             statusEl.textContent = `Successfully fetched ${data.results.length} live questions.`;
             data.results.forEach((item, index) => {
               const allOpts = [...item.incorrect_answers, item.correct_answer];
-              // Shuffle options
               allOpts.sort(() => Math.random() - 0.5);
               const correctIdx = allOpts.indexOf(item.correct_answer);
 
@@ -2133,7 +2107,6 @@
       drawer.classList.toggle("open");
     }
 
-    // Preserved Auth Modal Logic
     function openAuthModal(mode = 'signin') {
       switchModalAuthMode(mode);
       document.getElementById("auth-modal").style.display = "flex";
@@ -2208,7 +2181,7 @@
       document.getElementById("modal-otp-sub").textContent = `Code sent to: ${target}`;
 
       switchModalAuthMode('otp');
-      triggerToast("OTP Dispatched", `Code: ${activeOtp} (Simulated SMS/Email delivery)`);
+      triggerToast("OTP Dispatched", `Code: ${activeOtp}`);
     };
 
     window.handleVerifyOtpAndReset = function(e) {
@@ -2217,7 +2190,7 @@
       const newPass = document.getElementById("modal-new-password").value;
 
       if (code !== activeOtp) {
-        alert("Invalid OTP code. Please enter the simulated code shown above.");
+        alert("Invalid OTP code.");
         return;
       }
       if (newPass.length < 6) {
@@ -2278,7 +2251,6 @@
       renderQuestions();
       updateUserUI();
 
-      // Launch auth popup automatically if user is not authenticated
       if (!currentUser.isLoggedIn) {
         openAuthModal('signin');
       }
